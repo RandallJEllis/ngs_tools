@@ -1,0 +1,33 @@
+#BSUB -J rsem_quant  ## name whatever you want job to show up as
+#BSUB -P acc_DADisorders
+#BSUB -q premium
+#BSUB -n 20
+#BSUB -R span[hosts=1]
+#BSUB -R rusage[mem=16000]
+#BSUB -W 20:00     ## For most RNA-seq, probably max 1 hour needed per subject, sometimes asking for less $
+#BSUB -o rsem_quant.stdout  ## output files -- name them accordingly
+#BSUB -eo rsem_quant.stderr  ## output files --name accordingly
+#BSUB -L /bin/bash
+
+ml rsem
+
+# Set variable for hg38 genomic index and output directory
+
+INDEX=../genomes/rat/rsemIndex/
+OUTPUT_DIR=../output/transcriptome/TRANSCRIPTOME_FASTQ_2023/rsem_quant
+WORKING_DIR=../output/transcriptome/TRANSCRIPTOME_FASTQ_2023   # contains all of your fastqs
+
+# Command line for STAR
+
+cd ${WORKING_DIR}
+
+#STAR assumes single-end if only one file used
+for subject in *toTranscriptome.out.bam
+do
+  SAMPLE=$(echo ${subject} | sed "s/.toTranscriptome.out.bam//")
+  echo ${SAMPLE}.toTranscriptome.out.bam
+  rsem-calculate-expression --bam --no-bam-output -p 20 --paired-end --forward-prob 0.5 \
+  ${SAMPLE}.toTranscriptome.out.bam ${INDEX} ${OUTPUT_DIR}/${SAMPLE} >& ${OUTPUT_DIR}/${SAMPLE}.log
+
+done
+ 
